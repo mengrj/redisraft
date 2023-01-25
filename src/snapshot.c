@@ -233,7 +233,7 @@ static void freeNodeIdEntryList(NodeIdEntry *head)
 }
 
 /* ------------------------------------ Generate snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     assert(rr->snapshot_in_progress);
@@ -248,6 +248,7 @@ void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
     }
 }
 
+// INSTRUMENT_FUNC
 RRStatus finalizeSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     RaftLog *new_log = NULL;
@@ -468,7 +469,7 @@ exit:
 }
 
 /* ------------------------------------ Load snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 static int updateNodeFromSnapshot(RedisRaftCtx *rr, raft_node_t *node, SnapshotCfgEntry *cfg)
 {
     int ret = 0;
@@ -488,6 +489,7 @@ static int updateNodeFromSnapshot(RedisRaftCtx *rr, raft_node_t *node, SnapshotC
     return ret;
 }
 
+// INSTRUMENT_FUNC
 static void createNodeFromSnapshot(RedisRaftCtx *rr, SnapshotCfgEntry *cfg)
 {
     Node *n = NodeCreate(rr, cfg->id, &cfg->addr);
@@ -542,6 +544,7 @@ void configRaftFromSnapshotInfo(RedisRaftCtx *rr)
  * 4. Reconfigure nodes based on the snapshot metadata configuration.
  * 5. Create a new snapshot memory map.
  */
+// INSTRUMENT_FUNC
 int raftLoadSnapshot(raft_server_t *raft, void *user_data, raft_index_t index, raft_term_t term)
 {
     int ret;
@@ -812,6 +815,7 @@ static void handleSnapshotResponse(redisAsyncContext *c, void *r, void *privdata
     }
 }
 
+// INSTRUMENT_FUNC
 int raftSendSnapshot(raft_server_t *raft,
                      void *user_data,
                      raft_node_t *raft_node,

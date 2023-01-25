@@ -763,7 +763,7 @@ out:
 /* Add a new ShardGroup to the active ShardingInfo. Validation is done according to
  * ShardingInfoValidateShardGroup() above.
  */
-
+// INSTRUMENT_FUNC
 RRStatus ShardingInfoAddShardGroup(RedisRaftCtx *rr, ShardGroup *sg)
 {
     ShardingInfo *si = rr->sharding_info;
@@ -1616,6 +1616,7 @@ static void linkSendRequest(Connection *conn)
 
 /* Handle a RAFT.SHARDGROUP LINK request.
  */
+// INSTRUMENT_FUNC
 void ShardGroupLink(RedisRaftCtx *rr,
                     RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
@@ -1700,6 +1701,7 @@ void ShardGroupGet(RedisRaftCtx *rr, RedisModuleCtx *ctx)
     RedisModule_ReplySetArrayLength(ctx, node_count);
 }
 
+// INSTRUMENT_FUNC
 void ShardGroupAdd(RedisRaftCtx *rr,
                    RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
@@ -1731,6 +1733,7 @@ out:
     ShardGroupFree(sg);
 }
 
+// INSTRUMENT_FUNC
 void ShardGroupReplace(RedisRaftCtx *rr,
                        RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {

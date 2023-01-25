@@ -140,6 +140,7 @@ raft_server_t* raft_new(void)
     return raft_new_with_log(&raft_log_internal_impl, NULL);
 }
 
+// INSTRUMENT_FUNC
 void raft_set_callbacks(raft_server_t* me, raft_cbs_t* funcs, void* udata)
 {
     me->cb = *funcs;
@@ -282,6 +283,7 @@ void raft_handle_append_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_in
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE:
             if (!is_self)
             {
+                // INSTRUMENT_BB
                 if (node && !raft_node_is_active(node))
                 {
                     raft_node_set_active(node, 1);
@@ -295,6 +297,7 @@ void raft_handle_append_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_in
             break;
 
         case RAFT_LOGTYPE_ADD_NODE:
+            // INSTRUMENT_BB
             node = raft_add_node_internal(me, ety, NULL, node_id, is_self);
             assert(node);
             assert(raft_node_is_voting(node));
@@ -302,6 +305,7 @@ void raft_handle_append_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_in
 
         case RAFT_LOGTYPE_REMOVE_NODE:
             if (node) {
+                // INSTRUMENT_BB
                 raft_node_set_active(node, 0);
             }
             break;
@@ -326,15 +330,18 @@ void raft_handle_remove_cfg_change(raft_server_t* me, raft_entry_t* ety, const r
     switch (ety->type)
     {
         case RAFT_LOGTYPE_REMOVE_NODE:
+            // INSTRUMENT_BB
             raft_node_set_active(node, 1);
             break;
 
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE:
+            // INSTRUMENT_BB
             assert(node_id != raft_get_nodeid(me));
             raft_remove_node(me, node);
             break;
 
         case RAFT_LOGTYPE_ADD_NODE:
+            // INSTRUMENT_BB
             raft_node_set_voting(node, 0);
             break;
 
@@ -344,6 +351,7 @@ void raft_handle_remove_cfg_change(raft_server_t* me, raft_entry_t* ety, const r
     }
 }
 
+// INSTRUMENT_FUNC
 int raft_delete_entry_from_idx(raft_server_t* me, raft_index_t idx)
 {
     assert(raft_get_commit_idx(me) < idx);
@@ -388,6 +396,7 @@ void raft_accept_leader(raft_server_t* me, raft_node_id_t leader)
     me->leader_id = leader;
 }
 
+// INSTRUMENT_FUNC
 int raft_become_leader(raft_server_t* me)
 {
     raft_log(me, "becoming leader term: %ld", me->current_term);
@@ -443,6 +452,7 @@ int raft_become_leader(raft_server_t* me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_become_precandidate(raft_server_t* me)
 {
     raft_log(me,
@@ -468,6 +478,7 @@ int raft_become_precandidate(raft_server_t* me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_become_candidate(raft_server_t* me)
 {
     int i;
@@ -500,6 +511,7 @@ int raft_become_candidate(raft_server_t* me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 void raft_become_follower(raft_server_t* me)
 {
     raft_log(me, "becoming follower");
@@ -1225,15 +1237,18 @@ int raft_apply_entry(raft_server_t* me)
 
     switch (ety->type) {
         case RAFT_LOGTYPE_ADD_NODE:
+            // INSTRUMENT_BB
             raft_node_set_addition_committed(node, 1);
             raft_node_set_voting_committed(node, 1);
             raft_node_set_has_sufficient_logs(node);
             break;
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE:
+            // INSTRUMENT_BB
             raft_node_set_addition_committed(node, 1);
             break;
         case RAFT_LOGTYPE_REMOVE_NODE:
             if (node) {
+                // INSTRUMENT_BB
                 raft_remove_node(me, node);
             }
             break;
@@ -1305,6 +1320,7 @@ raft_entry_t **raft_get_entries_from_idx(raft_server_t *me,
     return e;
 }
 
+// INSTRUMENT_FUNC
 int raft_send_snapshot(raft_server_t* me, raft_node_t* node)
 {
     if (!me->cb.send_snapshot)
@@ -1344,6 +1360,7 @@ int raft_send_snapshot(raft_server_t* me, raft_node_t* node)
     }
 }
 
+// INSTRUMENT_FUNC
 int raft_recv_snapshot(raft_server_t* me,
                        raft_node_t* node,
                        raft_snapshot_req_t *req,
@@ -1456,11 +1473,13 @@ int raft_recv_snapshot_response(raft_server_t* me,
         return RAFT_ERR_NOT_LEADER;
 
     if (raft_node_get_match_msgid(node) > r->msg_id) {
+        // INSTRUMENT_BB
         return 0;
     }
 
     if (me->current_term < r->term)
     {
+        // INSTRUMENT_BB
         int e = raft_set_current_term(me, r->term);
         if (0 != e)
             return e;
@@ -1470,6 +1489,7 @@ int raft_recv_snapshot_response(raft_server_t* me,
     }
     else if (me->current_term != r->term)
     {
+        // INSTRUMENT_BB
         return 0;
     }
 
@@ -1726,12 +1746,14 @@ int raft_begin_snapshot(raft_server_t *me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_cancel_snapshot(raft_server_t *me)
 {
     me->snapshot_in_progress = 0;
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_end_snapshot(raft_server_t *me)
 {
     if (!me->snapshot_in_progress)

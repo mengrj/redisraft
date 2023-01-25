@@ -564,11 +564,13 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
 
     NodeDismissPendingResponse(node);
     if (!reply) {
+        // INSTRUMENT_BB
         NODE_LOG_DEBUG(node, "RAFT.REQUESTVOTE failed: connection dropped.");
         ConnMarkDisconnected(node->conn);
         return;
     }
     if (reply->type == REDIS_REPLY_ERROR) {
+        // INSTRUMENT_BB
         NODE_LOG_DEBUG(node, "RAFT.REQUESTVOTE error: %s", reply->str);
         return;
     }
@@ -578,6 +580,7 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
         reply->element[1]->type != REDIS_REPLY_INTEGER ||
         reply->element[2]->type != REDIS_REPLY_INTEGER ||
         reply->element[3]->type != REDIS_REPLY_INTEGER) {
+        // INSTRUMENT_BB
         NODE_LOG_WARNING(node, "invalid RAFT.REQUESTVOTE reply");
         return;
     }
@@ -592,6 +595,7 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
     raft_node_t *raft_node = raft_get_node(rr->raft, node->id);
     if (!raft_node) {
         NODE_LOG_DEBUG(node, "RAFT.REQUESTVOTE stale reply.");
+        // INSTRUMENT_BB
         return;
     }
 
@@ -600,10 +604,12 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
              rr->raft,
              raft_node,
              &response)) != 0) {
+        // INSTRUMENT_BB
         LOG_DEBUG("raft_recv_requestvote_response failed, error %d", ret);
     }
 }
 
+// INSTRUMENT_FUNC
 static int raftSendRequestVote(raft_server_t *raft, void *user_data,
                                raft_node_t *raft_node, raft_requestvote_req_t *msg)
 {
@@ -643,12 +649,14 @@ static void handleAppendEntriesResponse(redisAsyncContext *c, void *r, void *pri
 
     redisReply *reply = r;
     if (!reply) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.AE failed: connection dropped.");
         ConnMarkDisconnected(node->conn);
         return;
     }
 
     if (reply->type == REDIS_REPLY_ERROR) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.AE error: %s", reply->str);
         return;
     }
@@ -658,6 +666,7 @@ static void handleAppendEntriesResponse(redisAsyncContext *c, void *r, void *pri
         reply->element[1]->type != REDIS_REPLY_INTEGER ||
         reply->element[2]->type != REDIS_REPLY_INTEGER ||
         reply->element[3]->type != REDIS_REPLY_INTEGER) {
+        // INSTRUMENT_BB
         NODE_LOG_WARNING(node, "invalid RAFT.AE reply");
         return;
     }
@@ -673,10 +682,12 @@ static void handleAppendEntriesResponse(redisAsyncContext *c, void *r, void *pri
 
     int ret = raft_recv_appendentries_response(rr->raft, raft_node, &response);
     if (ret != 0) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "raft_recv_appendentries_response failed, error %d", ret);
     }
 }
 
+// INSTRUMENT_FUNC
 static int raftSendAppendEntries(raft_server_t *raft, void *user_data,
                                  raft_node_t *raft_node, raft_appendentries_req_t *msg)
 {
@@ -757,21 +768,25 @@ static void handleTimeoutNowResponse(redisAsyncContext *c, void *r, void *privda
 
     redisReply *reply = r;
     if (!reply) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.TIMEOUT_NOW failed: connection dropped.");
         ConnMarkDisconnected(node->conn);
         return;
     }
     if (reply->type == REDIS_REPLY_ERROR) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.TIMEOUT_NOW error: %s", reply->str);
         return;
     }
 
     if (reply->type != REDIS_REPLY_STATUS || strcmp("OK", reply->str)) {
+        // INSTRUMENT_BB
         NODE_LOG_WARNING(node, "invalid RAFT.TIMEOUT_NOW reply");
         return;
     }
 }
 
+// INSTRUMENT_FUNC
 static int raftSendTimeoutNow(raft_server_t *raft, raft_node_t *raft_node)
 {
     Node *node = raft_node_get_udata(raft_node);
@@ -968,6 +983,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data,
             /* When raft_add_node() is called explicitly, we get no entry so we
              * have nothing to do.
              */
+            // INSTRUMENT_BB
             if (!entry) {
                 addUsedNodeId(rr, my_id);
                 break;
@@ -990,6 +1006,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data,
             break;
 
         case RAFT_MEMBERSHIP_REMOVE:
+            // INSTRUMENT_BB
             node = raft_node_get_udata(raft_node);
             if (node != NULL) {
                 ConnAsyncTerminate(node->conn);
