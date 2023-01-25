@@ -119,6 +119,7 @@ long EntryCacheDeleteTail(EntryCache *cache, raft_index_t index)
     raft_index_t i;
 
     if (index >= cache->start_idx + cache->len) {
+        // INSTRUMENT_BB
         return -1;
     }
     if (index < cache->start_idx) {
@@ -142,7 +143,7 @@ long EntryCacheDeleteTail(EntryCache *cache, raft_index_t index)
     if (!cache->len) {
         cache->start_idx = 0;
     }
-
+    // INSTRUMENT_BB
     return deleted;
 }
 
