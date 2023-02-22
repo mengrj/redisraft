@@ -87,6 +87,7 @@ void raft_update_quorum_meta(raft_server_t* me, raft_msg_id_t id)
     me->last_acked_msg_id = id;
 }
 
+// INSTRUMENT_FUNC
 int raft_clear_incoming_snapshot(raft_server_t* me, raft_index_t new_idx)
 {
     int e = 0;
@@ -100,6 +101,7 @@ int raft_clear_incoming_snapshot(raft_server_t* me, raft_index_t new_idx)
     return e;
 }
 
+// INSTRUMENT_FUNC
 raft_server_t* raft_new_with_log(const raft_log_impl_t *log_impl, void *log_arg)
 {
     raft_server_t *me = raft_calloc(1, sizeof(*me));
@@ -147,12 +149,14 @@ void raft_set_callbacks(raft_server_t* me, raft_cbs_t* funcs, void* udata)
     me->udata = udata;
 }
 
+// INSTRUMENT_FUNC
 void raft_destroy(raft_server_t* me)
 {
     me->log_impl->free(me->log);
     raft_free(me);
 }
 
+// INSTRUMENT_FUNC
 void raft_clear(raft_server_t* me)
 {
     me->current_term = 0;
@@ -212,6 +216,7 @@ raft_node_t* raft_add_node_internal(raft_server_t* me, raft_entry_t *ety, void* 
     return node;
 }
 
+// INSTRUMENT_FUNC
 static raft_node_t* raft_add_non_voting_node_internal(raft_server_t* me, raft_entry_t *ety, void* udata, raft_node_id_t id, int is_self)
 {
     if (raft_get_node(me, id))
@@ -225,16 +230,19 @@ static raft_node_t* raft_add_non_voting_node_internal(raft_server_t* me, raft_en
     return node;
 }
 
+// INSTRUMENT_FUNC
 raft_node_t* raft_add_node(raft_server_t* me, void* udata, raft_node_id_t id, int is_self)
 {
     return raft_add_node_internal(me, NULL, udata, id, is_self);
 }
 
+// INSTRUMENT_FUNC
 raft_node_t* raft_add_non_voting_node(raft_server_t* me, void* udata, raft_node_id_t id, int is_self)
 {
     return raft_add_non_voting_node_internal(me, NULL, udata, id, is_self);
 }
 
+// INSTRUMENT_FUNC
 void raft_remove_node(raft_server_t* me, raft_node_t* node)
 {
     if (me->cb.notify_membership_event)

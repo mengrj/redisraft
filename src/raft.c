@@ -142,13 +142,16 @@ static KeysStatus validateKeyExistence(RedisRaftCtx *rr, RaftRedisCommandArray *
     }
 
     if (locked > 0) {
+        // INSTRUMENT_BB
         return LOCKED_EXIST;
     }
 
     if (found != total_keys) {
+        // INSTRUMENT_BB
         return (found == 0) ? NONE_EXIST : SOME_EXIST;
     }
 
+    // INSTRUMENT_BB
     return ALL_EXIST;
 }
 
@@ -207,6 +210,7 @@ static RRStatus validateRaftRedisCommandArray(RedisRaftCtx *rr, RedisModuleCtx *
     }
 
     if (slot_type == SLOTRANGE_TYPE_UNDEF) {
+        // INSTRUMENT_BB
         if (reply_ctx) {
             RedisModule_ReplyWithError(reply_ctx, "ERR internal error, couldn't associate a shardgroup slot to this request");
         }
@@ -224,6 +228,7 @@ static RRStatus validateRaftRedisCommandArray(RedisRaftCtx *rr, RedisModuleCtx *
 
     /* if our keys belong to a local migrating/importing slot, all keys must exist */
     if (slot_type == SLOTRANGE_TYPE_MIGRATING) {
+        // INSTRUMENT_BB
         switch (validateKeyExistence(rr, cmds)) {
             case SOME_EXIST:
             case LOCKED_EXIST:
@@ -247,6 +252,7 @@ static RRStatus validateRaftRedisCommandArray(RedisRaftCtx *rr, RedisModuleCtx *
                 return RR_OK;
         }
     } else if (slot_type == SLOTRANGE_TYPE_IMPORTING) {
+        // INSTRUMENT_BB
         switch (validateKeyExistence(rr, cmds)) {
             case SOME_EXIST:
             case NONE_EXIST:
@@ -847,6 +853,7 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
 
     switch (entry->type) {
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE:
+            // INSTRUMENT_BB
             req = entryDetachRaftReq(rr, entry);
             cfg = (RaftCfgChange *) entry->data;
             if (!req) {
@@ -859,6 +866,7 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
             RaftReqFree(req);
             break;
         case RAFT_LOGTYPE_REMOVE_NODE:
+            // INSTRUMENT_BB
             req = entryDetachRaftReq(rr, entry);
             cfg = (RaftCfgChange *) entry->data;
 
@@ -876,22 +884,28 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
             }
             break;
         case RAFT_LOGTYPE_NORMAL:
+            // INSTRUMENT_BB
             executeLogEntry(rr, entry, entry_idx);
             break;
         case RAFT_LOGTYPE_ADD_SHARDGROUP:
         case RAFT_LOGTYPE_UPDATE_SHARDGROUP:
+            // INSTRUMENT_BB
             applyShardGroupChange(rr, entry);
             break;
         case RAFT_LOGTYPE_REPLACE_SHARDGROUPS:
+            // INSTRUMENT_BB
             replaceShardGroups(rr, entry);
             break;
         case RAFT_LOGTYPE_IMPORT_KEYS:
+            // INSTRUMENT_BB
             importKeys(rr, entry);
             break;
         case RAFT_LOGTYPE_LOCK_KEYS:
+            // INSTRUMENT_BB
             lockKeys(rr, entry);
             break;
         case RAFT_LOGTYPE_DELETE_UNLOCK_KEYS:
+            // INSTRUMENT_BB
             unlockDeleteKeys(rr, entry);
             break;
         default:
@@ -1064,18 +1078,22 @@ static void raftNotifyStateEvent(raft_server_t *raft, void *user_data, raft_stat
 {
     switch (state) {
         case RAFT_STATE_FOLLOWER:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Node is now a follower, term %ld",
                        raft_get_current_term(raft));
             break;
         case RAFT_STATE_PRECANDIDATE:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Election starting, node is now a pre-candidate, term %ld",
                        raft_get_current_term(raft));
             break;
         case RAFT_STATE_CANDIDATE:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Node is now a candidate, term %ld",
                        raft_get_current_term(raft));
             break;
         case RAFT_STATE_LEADER:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Node is now a leader, term %ld",
                        raft_get_current_term(raft));
             break;
@@ -1517,10 +1535,12 @@ void RaftReqFree(RaftReq *req)
           req, req->ctx, req->client);
 
     if (req->type == RR_REDISCOMMAND) {
+        // INSTRUMENT_BB
         if (req->r.redis.cmds.size) {
             RaftRedisCommandArrayFree(&req->r.redis.cmds);
         }
     } else if (req->type == RR_IMPORT_KEYS) {
+        // INSTRUMENT_BB
         if (req->r.import_keys.key_names) {
             for (size_t i = 0; i < req->r.import_keys.num_keys; i++) {
                 RedisModule_FreeString(req->ctx, req->r.import_keys.key_names[i]);
@@ -1536,6 +1556,7 @@ void RaftReqFree(RaftReq *req)
             req->r.import_keys.key_serialized = NULL;
         }
     } else if (req->type == RR_MIGRATE_KEYS) {
+        // INSTRUMENT_BB
         if (req->r.migrate_keys.keys) {
             for (size_t i = 0; i < req->r.migrate_keys.num_keys; i++) {
                 RedisModule_FreeString(req->ctx, req->r.migrate_keys.keys[i]);
@@ -1601,15 +1622,19 @@ void handleTransferLeaderComplete(raft_server_t *raft, raft_leader_transfer_e re
 
     switch (result) {
         case RAFT_LEADER_TRANSFER_EXPECTED_LEADER:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             break;
         case RAFT_LEADER_TRANSFER_UNEXPECTED_LEADER:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "ERR different node elected leader");
             break;
         case RAFT_LEADER_TRANSFER_TIMEOUT:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "ERR transfer timed out");
             break;
         default:
+            // INSTRUMENT_BB
             snprintf(buf, sizeof(buf), "ERR unknown case: %d", result);
             RedisModule_ReplyWithError(ctx, buf);
             break;
@@ -1641,14 +1666,17 @@ void applyShardGroupChange(RedisRaftCtx *rr, raft_entry_t *entry)
 
     switch (entry->type) {
         case RAFT_LOGTYPE_ADD_SHARDGROUP:
+            // INSTRUMENT_BB
             if ((ret = ShardingInfoAddShardGroup(rr, sg)) != RR_OK)
                 LOG_WARNING("Failed to add a shardgroup");
             break;
         case RAFT_LOGTYPE_UPDATE_SHARDGROUP:
+            // INSTRUMENT_BB
             if ((ret = ShardingInfoUpdateShardGroup(rr, sg)) != RR_OK)
                 LOG_WARNING("Failed to update shardgroup");
             break;
         default:
+            // INSTRUMENT_BB
             PANIC("Unknown entry type %d", entry->type);
             break;
     }
