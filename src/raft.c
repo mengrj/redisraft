@@ -615,7 +615,6 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
     }
 }
 
-// INSTRUMENT_FUNC
 static int raftSendRequestVote(raft_server_t *raft, void *user_data,
                                raft_node_t *raft_node, raft_requestvote_req_t *msg)
 {
@@ -693,7 +692,6 @@ static void handleAppendEntriesResponse(redisAsyncContext *c, void *r, void *pri
     }
 }
 
-// INSTRUMENT_FUNC
 static int raftSendAppendEntries(raft_server_t *raft, void *user_data,
                                  raft_node_t *raft_node, raft_appendentries_req_t *msg)
 {
@@ -884,7 +882,6 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
             }
             break;
         case RAFT_LOGTYPE_NORMAL:
-            // INSTRUMENT_BB
             executeLogEntry(rr, entry, entry_idx);
             break;
         case RAFT_LOGTYPE_ADD_SHARDGROUP:
