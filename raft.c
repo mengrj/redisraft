@@ -529,6 +529,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             /* When raft_add_node() is called explicitly, we get no entry so we
              * have nothing to do.
              */
+            // INSTRUMENT_BB
             if (!entry) {
                 break;
             }
@@ -548,6 +549,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             break;
 
         case RAFT_MEMBERSHIP_REMOVE:
+            // INSTRUMENT_BB
             node = raft_node_get_udata(raft_node);
             if (node != NULL) {
                 node->flags |= NODE_TERMINATING;
@@ -565,14 +567,17 @@ static void raftNotifyStateEvent(raft_server_t *raft, void *user_data, raft_stat
 {
     switch (state) {
         case RAFT_STATE_FOLLOWER:
+            // INSTRUMENT_BB
             LOG_INFO("State change: Node is now a follower, term %d\n",
                     raft_get_current_term(raft));
             break;
         case RAFT_STATE_CANDIDATE:
+            // INSTRUMENT_BB
             LOG_INFO("State change: Election starting, node is now a candidate, term %d\n",
                     raft_get_current_term(raft));
             break;
         case RAFT_STATE_LEADER:
+            // INSTRUMENT_BB
             LOG_INFO("State change: Node is now a leader, term %d\n",
                     raft_get_current_term(raft));
             break;
@@ -1243,12 +1248,14 @@ static void handleCfgChange(RedisRaftCtx *rr, RaftReq *req)
 
     switch (req->type) {
         case RR_CFGCHANGE_ADDNODE:
+            // INSTRUMENT_BB
             entry->type = RAFT_LOGTYPE_ADD_NONVOTING_NODE;
             if (!req->r.cfgchange.id) {
                 req->r.cfgchange.id = makeRandomNodeId(rr);
             }
             break;
         case RR_CFGCHANGE_REMOVENODE:
+            // INSTRUMENT_BB
             entry->type = RAFT_LOGTYPE_DEMOTE_NODE;
             break;
         default:

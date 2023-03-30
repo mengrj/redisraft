@@ -92,6 +92,7 @@ static void handleNodeConnect(const redisAsyncContext *c, int status)
     }
 }
 
+// INSTRUMENT_FUNC
 static void handleNodeDisconnect(const redisAsyncContext *c, int status)
 {
     Node *node = (Node *) c->data;
@@ -143,6 +144,7 @@ static void handleNodeResolved(uv_getaddrinfo_t *resolver, int status, struct ad
     redisAsyncSetDisconnectCallback(node->rc, handleNodeDisconnect);
 }
 
+// INSTRUMENT_FUNC
 void NodeMarkDisconnected(Node *node)
 {
     node->state = NODE_DISCONNECTED;

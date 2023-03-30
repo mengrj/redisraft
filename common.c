@@ -124,15 +124,19 @@ RRStatus checkRaftState(RedisRaftCtx *rr, RaftReq *req)
 {
     switch (rr->state) {
         case REDIS_RAFT_UNINITIALIZED:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(req->ctx, "NOCLUSTER No Raft Cluster");
             return RR_ERROR;
         case REDIS_RAFT_JOINING:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(req->ctx, "NOCLUSTER No Raft Cluster (joining now)");
             return RR_ERROR;
         case REDIS_RAFT_LOADING:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(req->ctx, "LOADING Raft module is loading data");
             return RR_ERROR;
         case REDIS_RAFT_UP:
+            // INSTRUMENT_BB
             break;
     }
     return RR_OK;

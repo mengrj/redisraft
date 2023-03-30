@@ -97,6 +97,7 @@ raft_entry_t *EntryCacheGet(EntryCache *cache, raft_index_t idx)
     return ety;
 }
 
+// INSTRUMENT_FUNC
 long EntryCacheDeleteHead(EntryCache *cache, raft_index_t first_idx)
 {
     long deleted = 0;
@@ -127,6 +128,7 @@ long EntryCacheDeleteHead(EntryCache *cache, raft_index_t first_idx)
     return deleted;
 }
 
+// INSTRUMENT_FUNC
 long EntryCacheDeleteTail(EntryCache *cache, raft_index_t index)
 {
     long deleted = 0;
@@ -819,6 +821,7 @@ raft_entry_t *RaftLogGet(RaftLog *log, raft_index_t idx)
     return e;
 }
 
+// INSTRUMENT_FUNC
 RRStatus RaftLogDelete(RaftLog *log, raft_index_t from_idx, func_entry_notify_f cb, void *cb_arg)
 {
     off_t offset;

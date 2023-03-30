@@ -68,7 +68,7 @@ static void freeSnapshotCfgEntryList(SnapshotCfgEntry *head)
 
 
 /* ------------------------------------ Generate snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     assert(rr->snapshot_in_progress);
@@ -84,6 +84,7 @@ void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
     }
 }
 
+// INSTRUMENT_FUNC
 RRStatus finalizeSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     RaftLog *new_log = NULL;
@@ -505,6 +506,7 @@ exit:
     RaftReqFree(req);
 }
 
+// INSTRUMENT_FUNC
 void handleCompact(RedisRaftCtx *rr, RaftReq *req)
 {
     rr->compact_req = req;
