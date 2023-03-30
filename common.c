@@ -53,16 +53,20 @@ void replyRaftError(RedisModuleCtx *ctx, int error)
 
     switch (error) {
         case RAFT_ERR_NOT_LEADER:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "-ERR not leader");
             break;
         case RAFT_ERR_SHUTDOWN:
+            // INSTRUMENT_BB
             LOG_ERROR("Raft requires immediate shutdown!\n");
             RedisModule_Call(ctx, "SHUTDOWN", "");
             break;
         case RAFT_ERR_ONE_VOTING_CHANGE_ONLY:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "-ERR a voting change is already in progress");
             break;
         case RAFT_ERR_NOMEM:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "-OOM Raft out of memory");
             break;
         default:
