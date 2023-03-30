@@ -490,6 +490,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             /* When raft_add_node() is called explicitly, we get no entry so we
              * have nothing to do.
              */
+            // INSTRUMENT_BB
             if (!entry) {
                 break;
             }
@@ -509,6 +510,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             break;
 
         case RAFT_MEMBERSHIP_REMOVE:
+            // INSTRUMENT_BB
             node = raft_node_get_udata(raft_node);
             if (node != NULL) {
                 node->flags |= NODE_TERMINATING;
@@ -541,7 +543,7 @@ raft_cbs_t redis_raft_callbacks = {
  * Handling of the Redis Raft context, including its own thread and
  * async I/O loop.
  */
-
+// INSTRUMENT_FUNC
 RRStatus applyLoadedRaftLog(RedisRaftCtx *rr)
 {
     /* Make sure the log we're going to apply matches the RDB we've loaded */
@@ -663,9 +665,10 @@ static void handleLoadingState(RedisRaftCtx *rr)
             raft_set_commit_idx(rr->raft, rr->snapshot_info.last_applied_idx);
             raft_set_snapshot_metadata(rr->raft, rr->snapshot_info.last_applied_term,
                     rr->snapshot_info.last_applied_idx);
-
+            // INSTRUMENT_BB
             rr->state = REDIS_RAFT_UP;
         } else {
+            // INSTRUMENT_BB
             rr->state = REDIS_RAFT_UNINITIALIZED;
         }
     }
@@ -684,16 +687,19 @@ static void callRaftPeriodic(uv_timer_t *handle)
      * we can apply the log.
      */
     if (rr->state == REDIS_RAFT_LOADING) {
+        // INSTRUMENT_BB
         handleLoadingState(rr);
     }
 
     /* Proceed only if we're initialized */
     if (rr->state != REDIS_RAFT_UP) {
+        // INSTRUMENT_BB
         return;
     }
 
     /* If we're creating a persistent snapshot, check if we're done */
     if (rr->snapshot_in_progress) {
+        // INSTRUMENT_BB
         SnapshotResult sr;
 
         ret = pollSnapshotStatus(rr, &sr);
@@ -1168,12 +1174,14 @@ static void handleCfgChange(RedisRaftCtx *rr, RaftReq *req)
 
     switch (req->type) {
         case RR_CFGCHANGE_ADDNODE:
+            // INSTRUMENT_BB
             entry->type = RAFT_LOGTYPE_ADD_NONVOTING_NODE;
             if (!req->r.cfgchange.id) {
                 req->r.cfgchange.id = makeRandomNodeId(rr);
             }
             break;
         case RR_CFGCHANGE_REMOVENODE:
+            // INSTRUMENT_BB
             entry->type = RAFT_LOGTYPE_REMOVE_NODE;
             break;
         default:
