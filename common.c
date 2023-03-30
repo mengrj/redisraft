@@ -42,19 +42,24 @@ void replyRaftError(RedisModuleCtx *ctx, int error)
 
     switch (error) {
         case RAFT_ERR_NOT_LEADER:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "-ERR not leader");
             break;
         case RAFT_ERR_SHUTDOWN:
+            // INSTRUMENT_BB
             LOG_ERROR("Raft requires immediate shutdown!\n");
             RedisModule_Call(ctx, "SHUTDOWN", "");
             break;
         case RAFT_ERR_ONE_VOTING_CHANGE_ONLY:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "-ERR a voting change is already in progress");
             break;
         case RAFT_ERR_NOMEM:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "-OOM Raft out of memory");
             break;
         default:
+            // INSTRUMENT_BB
             snprintf(buf, sizeof(buf) - 1, "-ERR Raft error %d", error);
             RedisModule_ReplyWithError(ctx, buf);
             break;
@@ -113,15 +118,19 @@ RRStatus checkRaftState(RedisRaftCtx *rr, RaftReq *req)
 {
     switch (rr->state) {
         case REDIS_RAFT_UNINITIALIZED:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(req->ctx, "NOCLUSTER No Raft Cluster");
             return RR_ERROR;
         case REDIS_RAFT_JOINING:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(req->ctx, "NOCLUSTER No Raft Cluster (joining now)");
             return RR_ERROR;
         case REDIS_RAFT_LOADING:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(req->ctx, "LOADING Raft module is loading data");
             return RR_ERROR;
         case REDIS_RAFT_UP:
+            // INSTRUMENT_BB
             break;
     }
     return RR_OK;

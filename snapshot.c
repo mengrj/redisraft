@@ -59,7 +59,7 @@ static void freeSnapshotCfgEntryList(SnapshotCfgEntry *head)
 
 
 /* ------------------------------------ Generate snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     assert(rr->snapshot_in_progress);

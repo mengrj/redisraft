@@ -33,6 +33,7 @@ EntryCache *EntryCacheNew(unsigned long initial_size)
     return cache;
 }
 
+// INSTRUMENT_FUNC
 void EntryCacheFree(EntryCache *cache)
 {
     unsigned long i;
@@ -88,6 +89,7 @@ raft_entry_t *EntryCacheGet(EntryCache *cache, raft_index_t idx)
     return ety;
 }
 
+// INSTRUMENT_FUNC
 long EntryCacheDeleteHead(EntryCache *cache, raft_index_t first_idx)
 {
     long deleted = 0;
@@ -118,6 +120,7 @@ long EntryCacheDeleteHead(EntryCache *cache, raft_index_t first_idx)
     return deleted;
 }
 
+// INSTRUMENT_FUNC
 long EntryCacheDeleteTail(EntryCache *cache, raft_index_t index)
 {
     long deleted = 0;
@@ -151,6 +154,7 @@ long EntryCacheDeleteTail(EntryCache *cache, raft_index_t index)
     return deleted;
 }
 
+// INSTRUMENT_FUNC
 long EntryCacheCompact(EntryCache *cache, size_t max_memory)
 {
     long deleted = 0;
@@ -810,6 +814,7 @@ raft_entry_t *RaftLogGet(RaftLog *log, raft_index_t idx)
     return e;
 }
 
+// INSTRUMENT_FUNC
 RRStatus RaftLogDelete(RaftLog *log, raft_index_t from_idx, func_entry_notify_f cb, void *cb_arg)
 {
     off_t offset;
@@ -966,6 +971,7 @@ exit:
     return num_entries;
 }
 
+// INSTRUMENT_FUNC
 void RaftLogRemoveFiles(const char *filename)
 {
     char *idx_filename = getIndexFilename(filename);

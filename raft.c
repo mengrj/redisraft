@@ -414,12 +414,14 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
 
     switch (entry->type) {
         case RAFT_LOGTYPE_REMOVE_NODE:
+            // INSTRUMENT_BB
             req = (RaftCfgChange *) entry->data;
             if (req->id == raft_get_nodeid(raft)) {
                 return RAFT_ERR_SHUTDOWN;
             }
             break;
         case RAFT_LOGTYPE_NORMAL:
+            // INSTRUMENT_BB
             executeLogEntry(rr, entry, entry_idx);
             break;
         default:
@@ -488,6 +490,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             /* When raft_add_node() is called explicitly, we get no entry so we
              * have nothing to do.
              */
+            // INSTRUMENT_BB
             if (!entry) {
                 break;
             }
@@ -507,6 +510,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             break;
 
         case RAFT_MEMBERSHIP_REMOVE:
+            // INSTRUMENT_BB
             node = raft_node_get_udata(raft_node);
             if (node != NULL) {
                 node->flags |= NODE_TERMINATING;
@@ -1003,6 +1007,7 @@ void RaftReqFree(RaftReq *req)
             /* Note: we only free the array of entries but not actual entries, as they
              * are owned by the log and should be freed when the log entry is freed.
              */
+            // INSTRUMENT_BB
             if (req->r.appendentries.msg.entries) {
                 int i;
                 for (i = 0; i < req->r.appendentries.msg.n_entries; i++) {
@@ -1016,15 +1021,18 @@ void RaftReqFree(RaftReq *req)
             }
             break;
         case RR_REDISCOMMAND:
+            // INSTRUMENT_BB
             if (req->ctx && req->r.redis.cmds.size) {
                 RaftRedisCommandArrayFree(&req->r.redis.cmds);
             }
             // TODO: hold a reference from entry so we can disconnect our req
             break;
         case RR_LOADSNAPSHOT:
+            // INSTRUMENT_BB
             RedisModule_FreeString(req->ctx, req->r.loadsnapshot.snapshot);
             break;
         case RR_CLUSTER_JOIN:
+            // INSTRUMENT_BB
             NodeAddrListFree(req->r.cluster_join.addr);
             break;
     }
