@@ -105,6 +105,7 @@ static int cmdRaftNode(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     const char *cmd = RedisModule_StringPtrLen(argv[1], &cmd_len);
     if (!strncasecmp(cmd, "ADD", cmd_len)) {
+        // INSTRUMENT_BB
         if (argc != 4) {
             RedisModule_WrongArity(ctx);
             return REDISMODULE_OK;
@@ -129,6 +130,7 @@ static int cmdRaftNode(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         req->r.cfgchange.id = node_id;
         req->r.cfgchange.addr = node_addr;
     } else if (!strncasecmp(cmd, "REMOVE", cmd_len)) {
+        // INSTRUMENT_BB
         if (argc != 3) {
             RedisModule_WrongArity(ctx);
             return REDISMODULE_OK;
@@ -406,7 +408,7 @@ static int cmdRaftConfig(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
  *    :0 (already have snapshot or newer)
  *    :1 (loaded)
  */
-
+// INSTRUMENT_FUNC
 static int cmdRaftLoadSnapshot(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 {
     if (argc != 4) {

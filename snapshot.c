@@ -68,7 +68,7 @@ static void freeSnapshotCfgEntryList(SnapshotCfgEntry *head)
 
 
 /* ------------------------------------ Generate snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     assert(rr->snapshot_in_progress);
@@ -84,6 +84,7 @@ void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
     }
 }
 
+// INSTRUMENT_FUNC
 RRStatus finalizeSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     RaftLog *new_log = NULL;
@@ -155,6 +156,7 @@ int pollSnapshotStatus(RedisRaftCtx *rr, SnapshotResult *sr)
     if (ret == -1) {
         /* Not ready yet? */
         if (errno == EAGAIN) {
+            // INSTRUMENT_BB
             return 0;
         }
 
@@ -163,11 +165,13 @@ int pollSnapshotStatus(RedisRaftCtx *rr, SnapshotResult *sr)
     }
 
     if (sr->magic != SNAPSHOT_RESULT_MAGIC) {
+        // INSTRUMENT_BB
         LOG_ERROR("Corrupted snapshot result (magic=%08x)\n", sr->magic);
         goto exit;
     }
 
     if (!sr->success) {
+        // INSTRUMENT_BB
         LOG_ERROR("Snapshot failed: %s", sr->err);
         goto exit;
     }
@@ -310,7 +314,7 @@ exit:
 }
 
 /* ------------------------------------ Load snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 static void removeAllNodes(RedisRaftCtx *rr)
 {
     int i;
@@ -335,6 +339,7 @@ static void removeAllNodes(RedisRaftCtx *rr)
 /* Load node configuration from snapshot metadata.  We assume no duplicate nodes
  * here, so removeAllNodes() should be called beforehand.
  */
+// INSTRUMENT_FUNC
 static void loadSnapshotNodes(RedisRaftCtx *rr, SnapshotCfgEntry *cfg)
 {
     while (cfg != NULL) {
@@ -363,6 +368,7 @@ static void loadSnapshotNodes(RedisRaftCtx *rr, SnapshotCfgEntry *cfg)
 
 }
 
+// INSTRUMENT_FUNC
 void configRaftFromSnapshotInfo(RedisRaftCtx *rr)
 {
     /* Load node configuration */
@@ -739,6 +745,7 @@ static int snapshotSendData(Node *node)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 static void cleanSnapshotDelivery(Node *node)
 {
     if (node->snapshot_buf != NULL) {
