@@ -48,6 +48,7 @@ static SnapshotCfgEntry *generateSnapshotCfgEntryList(RedisRaftCtx *rr)
 }
 
 /* Free a chain of SnapshotCfgEntry structs */
+// INSTRUMENT_FUNC
 static void freeSnapshotCfgEntryList(SnapshotCfgEntry *head)
 {
     while (head != NULL) {
@@ -59,7 +60,7 @@ static void freeSnapshotCfgEntryList(SnapshotCfgEntry *head)
 
 
 /* ------------------------------------ Generate snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     assert(rr->snapshot_in_progress);
@@ -75,6 +76,7 @@ void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
     }
 }
 
+// INSTRUMENT_FUNC
 RRStatus finalizeSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     RaftLog *new_log = NULL;
