@@ -233,6 +233,7 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
     redisReply *reply = r;
 
     if (!reply || reply->type == REDIS_REPLY_ERROR) {
+        // INSTRUMENT_BB
         NODE_LOG_DEBUG(node, "RAFT.REQUESTVOTE failed: %s\n", reply ? reply->str : "connection dropped.");
         NodeMarkDisconnected(node);
         return;
@@ -240,6 +241,7 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
     if (reply->type != REDIS_REPLY_ARRAY || reply->elements != 2 ||
             reply->element[0]->type != REDIS_REPLY_INTEGER ||
             reply->element[1]->type != REDIS_REPLY_INTEGER) {
+        // INSTRUMENT_BB
         NODE_LOG_ERROR(node, "invalid RAFT.REQUESTVOTE reply\n");
         return;
     }
@@ -419,15 +421,18 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
 
     switch (entry->type) {
         case RAFT_LOGTYPE_REMOVE_NODE:
+            // INSTRUMENT_BB
             req = (RaftCfgChange *) entry->data;
             if (req->id == raft_get_nodeid(raft)) {
                 return RAFT_ERR_SHUTDOWN;
             }
             break;
         case RAFT_LOGTYPE_NORMAL:
+            // INSTRUMENT_BB
             executeLogEntry(rr, entry, entry_idx);
             break;
         default:
+            // INSTRUMENT_BB
             break;
     }
 
@@ -493,6 +498,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             /* When raft_add_node() is called explicitly, we get no entry so we
              * have nothing to do.
              */
+            // INSTRUMENT_BB
             if (!entry) {
                 break;
             }
@@ -512,6 +518,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             break;
 
         case RAFT_MEMBERSHIP_REMOVE:
+            // INSTRUMENT_BB
             node = raft_node_get_udata(raft_node);
             if (node != NULL) {
                 node->flags |= NODE_TERMINATING;
@@ -520,6 +527,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data, raft_node_t
             break;
 
         default:
+            // INSTRUMENT_BB
             assert(0);
     }
 
@@ -763,6 +771,7 @@ static void RedisRaftThread(void *arg)
     uv_run(rr->loop, UV_RUN_DEFAULT);
 }
 
+// INSTRUMENT_FUNC
 static int appendRaftCfgChangeEntry(RedisRaftCtx *rr, int type, int id, NodeAddr *addr)
 {
 
@@ -1008,6 +1017,7 @@ void RaftReqFree(RaftReq *req)
             /* Note: we only free the array of entries but not actual entries, as they
              * are owned by the log and should be freed when the log entry is freed.
              */
+            // INSTRUMENT_BB
             if (req->r.appendentries.msg.entries) {
                 int i;
                 for (i = 0; i < req->r.appendentries.msg.n_entries; i++) {
@@ -1021,15 +1031,18 @@ void RaftReqFree(RaftReq *req)
             }
             break;
         case RR_REDISCOMMAND:
+            // INSTRUMENT_BB
             if (req->ctx && req->r.redis.cmds.size) {
                 RaftRedisCommandArrayFree(&req->r.redis.cmds);
             }
             // TODO: hold a reference from entry so we can disconnect our req
             break;
         case RR_LOADSNAPSHOT:
+            // INSTRUMENT_BB
             RedisModule_FreeString(req->ctx, req->r.loadsnapshot.snapshot);
             break;
         case RR_CLUSTER_JOIN:
+            // INSTRUMENT_BB
             NodeAddrListFree(req->r.cluster_join.addr);
             break;
     }
@@ -1171,15 +1184,18 @@ static void handleCfgChange(RedisRaftCtx *rr, RaftReq *req)
 
     switch (req->type) {
         case RR_CFGCHANGE_ADDNODE:
+            // INSTRUMENT_BB
             entry->type = RAFT_LOGTYPE_ADD_NONVOTING_NODE;
             if (!req->r.cfgchange.id) {
                 req->r.cfgchange.id = makeRandomNodeId(rr);
             }
             break;
         case RR_CFGCHANGE_REMOVENODE:
+            // INSTRUMENT_BB
             entry->type = RAFT_LOGTYPE_REMOVE_NODE;
             break;
         default:
+            // INSTRUMENT_BB
             assert(0);
     }
 
@@ -1500,15 +1516,19 @@ static void handleInfo(RedisRaftCtx *rr, RaftReq *req)
     } else {
         switch (raft_get_state(rr->raft)) {
             case RAFT_STATE_FOLLOWER:
+                // INSTRUMENT_BB
                 strcpy(role, "follower");
                 break;
             case RAFT_STATE_LEADER:
+                // INSTRUMENT_BB
                 strcpy(role, "leader");
                 break;
             case RAFT_STATE_CANDIDATE:
+                // INSTRUMENT_BB
                 strcpy(role, "candidate");
                 break;
             default:
+                // INSTRUMENT_BB
                 strcpy(role, "(none)");
                 break;
         }
@@ -1547,21 +1567,27 @@ static void handleInfo(RedisRaftCtx *rr, RaftReq *req)
         char state[40];
         switch (node->state) {
             case NODE_DISCONNECTED:
+                // INSTRUMENT_BB
                 strcpy(state, "disconnected");
                 break;
             case NODE_RESOLVING:
+                // INSTRUMENT_BB
                 strcpy(state, "resolving");
                 break;
             case NODE_CONNECTING:
+                // INSTRUMENT_BB
                 strcpy(state, "connecting");
                 break;
             case NODE_CONNECTED:
+                // INSTRUMENT_BB
                 strcpy(state, "connected");
                 break;
             case NODE_CONNECT_ERROR:
+                // INSTRUMENT_BB
                 strcpy(state, "connect_error");
                 break;
             default:
+                // INSTRUMENT_BB
                 strcpy(state, "--");
                 break;
         }
