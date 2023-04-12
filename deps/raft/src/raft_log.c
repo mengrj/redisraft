@@ -75,6 +75,7 @@ static int ensure_capacity(raft_log_t *me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_log_load_from_snapshot(raft_log_t *me,
                                 raft_index_t idx,
                                 raft_term_t term)
@@ -112,6 +113,7 @@ raft_log_t *raft_log_new(void)
     return raft_log_alloc(INITIAL_CAPACITY);
 }
 
+// INSTRUMENT_FUNC
 void raft_log_set_callbacks(raft_log_t *me, raft_log_cbs_t *funcs, void *raft)
 {
     me->raft = raft;
@@ -214,6 +216,7 @@ raft_index_t raft_log_count(raft_log_t *me)
     return me->count;
 }
 
+// INSTRUMENT_FUNC
 static int log_delete(raft_log_t *me, raft_index_t idx)
 {
     if (idx == 0) {

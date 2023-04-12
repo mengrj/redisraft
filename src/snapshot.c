@@ -229,6 +229,7 @@ static void resetSnapshotState(RedisRaftCtx *rr)
     rr->curr_snapshot_start_time = 0;
 }
 
+// INSTRUMENT_FUNC
 void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     RedisModule_Assert(rr->snapshot_in_progress);
@@ -243,6 +244,7 @@ void cancelSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
     }
 }
 
+// INSTRUMENT_FUNC
 RRStatus finalizeSnapshot(RedisRaftCtx *rr, SnapshotResult *sr)
 {
     RedisModule_Assert(rr->snapshot_in_progress);
@@ -429,7 +431,7 @@ exit:
 }
 
 /* ------------------------------------ Load snapshots ------------------------------------ */
-
+// INSTRUMENT_FUNC
 static void createNodeFromSnapshot(RedisRaftCtx *rr, SnapshotCfgEntry *cfg)
 {
     Node *n = NodeCreate(rr, cfg->id, &cfg->addr);
@@ -527,6 +529,7 @@ void loadPendingSnapshot(RedisRaftCtx *rr)
 
 /* After a snapshot is received, replace it with the existing snapshot file
  * and trigger the load operation which will be done inside periodic timer. */
+// INSTRUMENT_FUNC
 int raftLoadSnapshot(raft_server_t *raft, void *user_data, raft_term_t term,
                      raft_index_t index)
 {
@@ -847,6 +850,7 @@ static void handleSnapshotResponse(redisAsyncContext *c, void *r, void *privdata
     }
 }
 
+// INSTRUMENT_FUNC
 int raftSendSnapshot(raft_server_t *raft,
                      void *user_data,
                      raft_node_t *raft_node,

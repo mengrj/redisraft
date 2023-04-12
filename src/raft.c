@@ -142,13 +142,16 @@ static KeysStatus validateKeyExistence(RedisRaftCtx *rr, RaftRedisCommandArray *
     }
 
     if (locked > 0) {
+        // INSTRUMENT_BB
         return LOCKED_EXIST;
     }
 
     if (found != total_keys) {
+        // INSTRUMENT_BB
         return (found == 0) ? NONE_EXIST : SOME_EXIST;
     }
 
+    // INSTRUMENT_BB
     return ALL_EXIST;
 }
 
@@ -207,6 +210,7 @@ static RRStatus validateRaftRedisCommandArray(RedisRaftCtx *rr, RedisModuleCtx *
     }
 
     if (slot_type == SLOTRANGE_TYPE_UNDEF) {
+        // INSTRUMENT_BB
         if (reply_ctx) {
             RedisModule_ReplyWithError(reply_ctx, "ERR internal error, couldn't associate a shardgroup slot to this request");
         }
@@ -224,6 +228,7 @@ static RRStatus validateRaftRedisCommandArray(RedisRaftCtx *rr, RedisModuleCtx *
 
     /* if our keys belong to a local migrating/importing slot, all keys must exist */
     if (slot_type == SLOTRANGE_TYPE_MIGRATING) {
+        // INSTRUMENT_BB
         switch (validateKeyExistence(rr, cmds)) {
             case SOME_EXIST:
             case LOCKED_EXIST:
@@ -247,6 +252,7 @@ static RRStatus validateRaftRedisCommandArray(RedisRaftCtx *rr, RedisModuleCtx *
                 return RR_OK;
         }
     } else if (slot_type == SLOTRANGE_TYPE_IMPORTING) {
+        // INSTRUMENT_BB
         switch (validateKeyExistence(rr, cmds)) {
             case SOME_EXIST:
             case NONE_EXIST:
@@ -780,11 +786,13 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
 
     NodeDismissPendingResponse(node);
     if (!reply) {
+        // INSTRUMENT_BB
         NODE_LOG_DEBUG(node, "RAFT.REQUESTVOTE failed: connection dropped.");
         ConnMarkDisconnected(node->conn);
         return;
     }
     if (reply->type == REDIS_REPLY_ERROR) {
+        // INSTRUMENT_BB
         NODE_LOG_DEBUG(node, "RAFT.REQUESTVOTE error: %s", reply->str);
         return;
     }
@@ -794,6 +802,7 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
         reply->element[1]->type != REDIS_REPLY_INTEGER ||
         reply->element[2]->type != REDIS_REPLY_INTEGER ||
         reply->element[3]->type != REDIS_REPLY_INTEGER) {
+        // INSTRUMENT_BB
         NODE_LOG_WARNING(node, "invalid RAFT.REQUESTVOTE reply");
         return;
     }
@@ -807,6 +816,7 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
 
     raft_node_t *raft_node = raft_get_node(rr->raft, node->id);
     if (!raft_node) {
+        // INSTRUMENT_BB
         NODE_LOG_DEBUG(node, "RAFT.REQUESTVOTE stale reply.");
         return;
     }
@@ -816,6 +826,7 @@ static void handleRequestVoteResponse(redisAsyncContext *c, void *r, void *privd
              rr->raft,
              raft_node,
              &response)) != 0) {
+        // INSTRUMENT_BB
         LOG_DEBUG("raft_recv_requestvote_response failed, error %d", ret);
     }
 }
@@ -859,12 +870,14 @@ static void handleAppendEntriesResponse(redisAsyncContext *c, void *r, void *pri
 
     redisReply *reply = r;
     if (!reply) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.AE failed: connection dropped.");
         ConnMarkDisconnected(node->conn);
         return;
     }
 
     if (reply->type == REDIS_REPLY_ERROR) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.AE error: %s", reply->str);
         return;
     }
@@ -874,6 +887,7 @@ static void handleAppendEntriesResponse(redisAsyncContext *c, void *r, void *pri
         reply->element[1]->type != REDIS_REPLY_INTEGER ||
         reply->element[2]->type != REDIS_REPLY_INTEGER ||
         reply->element[3]->type != REDIS_REPLY_INTEGER) {
+        // INSTRUMENT_BB
         NODE_LOG_WARNING(node, "invalid RAFT.AE reply");
         return;
     }
@@ -889,6 +903,7 @@ static void handleAppendEntriesResponse(redisAsyncContext *c, void *r, void *pri
 
     int ret = raft_recv_appendentries_response(rr->raft, raft_node, &response);
     if (ret != 0) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "raft_recv_appendentries_response failed, error %d", ret);
     }
 }
@@ -973,21 +988,25 @@ static void handleTimeoutNowResponse(redisAsyncContext *c, void *r, void *privda
 
     redisReply *reply = r;
     if (!reply) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.TIMEOUT_NOW failed: connection dropped.");
         ConnMarkDisconnected(node->conn);
         return;
     }
     if (reply->type == REDIS_REPLY_ERROR) {
+        // INSTRUMENT_BB
         NODE_TRACE(node, "RAFT.TIMEOUT_NOW error: %s", reply->str);
         return;
     }
 
     if (reply->type != REDIS_REPLY_STATUS || strcmp("OK", reply->str) != 0) {
+        // INSTRUMENT_BB
         NODE_LOG_WARNING(node, "invalid RAFT.TIMEOUT_NOW reply");
         return;
     }
 }
 
+// INSTRUMENT_FUNC
 static int raftSendTimeoutNow(raft_server_t *raft, void *udata, raft_node_t *raft_node)
 {
     Node *node = raft_node_get_udata(raft_node);
@@ -1030,6 +1049,7 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
 
     switch (entry->type) {
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE: {
+            // INSTRUMENT_BB
             RaftCfgChange *cfg = (RaftCfgChange *) entry->data;
             if (!req) {
                 break;
@@ -1042,6 +1062,7 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
             break;
         }
         case RAFT_LOGTYPE_REMOVE_NODE: {
+            // INSTRUMENT_BB
             RaftCfgChange *cfg = (RaftCfgChange *) entry->data;
 
             if (req) {
@@ -1059,32 +1080,41 @@ static int raftApplyLog(raft_server_t *raft, void *user_data, raft_entry_t *entr
             break;
         }
         case RAFT_LOGTYPE_NORMAL:
+            // INSTRUMENT_BB
             executeLogEntry(rr, entry, entry_idx, req);
             break;
         case RAFT_LOGTYPE_ADD_SHARDGROUP:
         case RAFT_LOGTYPE_UPDATE_SHARDGROUP:
+            // INSTRUMENT_BB
             applyShardGroupChange(rr, entry, req);
             break;
         case RAFT_LOGTYPE_REPLACE_SHARDGROUPS:
+            // INSTRUMENT_BB
             replaceShardGroups(rr, entry, req);
             break;
         case RAFT_LOGTYPE_IMPORT_KEYS:
+            // INSTRUMENT_BB
             importKeys(rr, entry, req);
             break;
         case RAFT_LOGTYPE_LOCK_KEYS:
+            // INSTRUMENT_BB
             lockKeys(rr, entry, req);
             break;
         case RAFT_LOGTYPE_DELETE_UNLOCK_KEYS:
+            // INSTRUMENT_BB
             unlockDeleteKeys(rr, entry, req);
             break;
         case RAFT_LOGTYPE_END_SESSION:
+            // INSTRUMENT_BB
             handleEndClientSession(rr, entry, req);
             break;
         case RAFT_LOGTYPE_NO_OP:
+            // INSTRUMENT_BB
             clearClientSessions(rr);
             clearAllBlockCommands();
             break;
         case RAFT_LOGTYPE_TIMEOUT_BLOCKED:
+            // INSTRUMENT_BB
             timeoutBlockedCommand(rr, entry, req);
             break;
         default:
@@ -1152,6 +1182,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data,
             /* When raft_add_node() is called explicitly, we get no entry so we
              * have nothing to do.
              */
+            // INSTRUMENT_BB
             if (!entry) {
                 addUsedNodeId(rr, my_id);
                 break;
@@ -1176,6 +1207,7 @@ void raftNotifyMembershipEvent(raft_server_t *raft, void *user_data,
             break;
 
         case RAFT_MEMBERSHIP_REMOVE:
+            // INSTRUMENT_BB
             node = raft_node_get_udata(raft_node);
             if (node != NULL) {
                 ConnAsyncTerminate(node->conn);
@@ -1233,18 +1265,22 @@ static void raftNotifyStateEvent(raft_server_t *raft, void *user_data, raft_stat
 {
     switch (state) {
         case RAFT_STATE_FOLLOWER:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Node is now a follower, term %ld",
                        raft_get_current_term(raft));
             break;
         case RAFT_STATE_PRECANDIDATE:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Election starting, node is now a pre-candidate, term %ld",
                        raft_get_current_term(raft));
             break;
         case RAFT_STATE_CANDIDATE:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Node is now a candidate, term %ld",
                        raft_get_current_term(raft));
             break;
         case RAFT_STATE_LEADER:
+            // INSTRUMENT_BB
             LOG_NOTICE("State change: Node is now a leader, term %ld",
                        raft_get_current_term(raft));
             break;
@@ -1718,10 +1754,12 @@ void RaftReqFree(RaftReq *req)
     }
 
     if (req->type == RR_REDISCOMMAND) {
+        // INSTRUMENT_BB
         if (req->r.redis.cmds.size) {
             RaftRedisCommandArrayFree(&req->r.redis.cmds);
         }
     } else if (req->type == RR_IMPORT_KEYS) {
+        // INSTRUMENT_BB
         if (req->r.import_keys.key_names) {
             for (size_t i = 0; i < req->r.import_keys.num_keys; i++) {
                 RedisModule_FreeString(req->ctx, req->r.import_keys.key_names[i]);
@@ -1737,6 +1775,7 @@ void RaftReqFree(RaftReq *req)
             req->r.import_keys.key_serialized = NULL;
         }
     } else if (req->type == RR_MIGRATE_KEYS) {
+        // INSTRUMENT_BB
         if (req->r.migrate_keys.keys) {
             for (size_t i = 0; i < req->r.migrate_keys.num_keys; i++) {
                 RedisModule_FreeString(req->ctx, req->r.migrate_keys.keys[i]);
@@ -1848,15 +1887,19 @@ void handleTransferLeaderComplete(raft_server_t *raft, raft_leader_transfer_e re
 
     switch (result) {
         case RAFT_LEADER_TRANSFER_EXPECTED_LEADER:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithSimpleString(ctx, "OK");
             break;
         case RAFT_LEADER_TRANSFER_UNEXPECTED_LEADER:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "ERR different node elected leader");
             break;
         case RAFT_LEADER_TRANSFER_TIMEOUT:
+            // INSTRUMENT_BB
             RedisModule_ReplyWithError(ctx, "ERR transfer timed out");
             break;
         default:
+            // INSTRUMENT_BB
             snprintf(buf, sizeof(buf), "ERR unknown case: %d", result);
             RedisModule_ReplyWithError(ctx, buf);
             break;
@@ -1888,14 +1931,17 @@ void applyShardGroupChange(RedisRaftCtx *rr, raft_entry_t *entry, RaftReq *req)
 
     switch (entry->type) {
         case RAFT_LOGTYPE_ADD_SHARDGROUP:
+            // INSTRUMENT_BB
             if ((ret = ShardingInfoAddShardGroup(rr, sg)) != RR_OK)
                 LOG_WARNING("Failed to add a shardgroup");
             break;
         case RAFT_LOGTYPE_UPDATE_SHARDGROUP:
+            // INSTRUMENT_BB
             if ((ret = ShardingInfoUpdateShardGroup(rr, sg)) != RR_OK)
                 LOG_WARNING("Failed to update shardgroup");
             break;
         default:
+            // INSTRUMENT_BB
             PANIC("Unknown entry type %d", entry->type);
             break;
     }

@@ -83,6 +83,7 @@ void raft_update_quorum_meta(raft_server_t* me, raft_msg_id_t id)
     me->last_acked_msg_id = id;
 }
 
+// INSTRUMENT_FUNC
 int raft_clear_incoming_snapshot(raft_server_t* me, raft_index_t new_idx)
 {
     int e = 0;
@@ -96,6 +97,7 @@ int raft_clear_incoming_snapshot(raft_server_t* me, raft_index_t new_idx)
     return e;
 }
 
+// INSTRUMENT_FUNC
 raft_server_t* raft_new_with_log(const raft_log_impl_t *log_impl, void *log_arg)
 {
     raft_server_t *me = raft_calloc(1, sizeof(*me));
@@ -146,18 +148,21 @@ int raft_restore_metadata(raft_server_t *me,
     return 0;
 }
 
+// INSTRUMENT_FUNC
 void raft_set_callbacks(raft_server_t* me, raft_cbs_t* funcs, void* udata)
 {
     me->cb = *funcs;
     me->udata = udata;
 }
 
+// INSTRUMENT_FUNC
 void raft_destroy(raft_server_t* me)
 {
     me->log_impl->free(me->log);
     raft_free(me);
 }
 
+// INSTRUMENT_FUNC
 void raft_clear(raft_server_t* me)
 {
     me->current_term = 0;
@@ -218,16 +223,19 @@ raft_node_t* raft_add_node_internal(raft_server_t *me, raft_entry_t *ety, void *
     return node;
 }
 
+// INSTRUMENT_FUNC
 raft_node_t* raft_add_node(raft_server_t* me, void* udata, raft_node_id_t id, int is_self)
 {
     return raft_add_node_internal(me, NULL, udata, id, is_self, 1);
 }
 
+// INSTRUMENT_FUNC
 raft_node_t* raft_add_non_voting_node(raft_server_t* me, void* udata, raft_node_id_t id, int is_self)
 {
     return raft_add_node_internal(me, NULL, udata, id, is_self, 0);
 }
 
+// INSTRUMENT_FUNC
 void raft_remove_node(raft_server_t* me, raft_node_t* node)
 {
     if (me->cb.notify_membership_event) {
@@ -275,6 +283,7 @@ void raft_handle_append_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_in
     switch (ety->type)
     {
         case RAFT_LOGTYPE_ADD_NODE:
+            // INSTRUMENT_BB
             node = raft_add_node_internal(me, ety, NULL, node_id, is_self, 1);
             assert(node);
             assert(raft_node_is_voting(node));
@@ -283,6 +292,7 @@ void raft_handle_append_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_in
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE:
             if (!is_self)
             {
+                // INSTRUMENT_BB
                 assert(!node || !raft_node_is_voting(node));
                 if (node && !raft_node_is_active(node))
                 {
@@ -298,6 +308,7 @@ void raft_handle_append_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_in
             break;
 
         case RAFT_LOGTYPE_REMOVE_NODE:
+            // INSTRUMENT_BB
             if (node) {
                 raft_node_set_active(node, 0);
             }
@@ -322,15 +333,18 @@ void raft_handle_remove_cfg_change(raft_server_t* me, raft_entry_t* ety, const r
     switch (ety->type)
     {
         case RAFT_LOGTYPE_ADD_NODE:
+            // INSTRUMENT_BB
             raft_node_set_voting(node, 0);
             break;
 
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE:
+            // INSTRUMENT_BB
             assert(node_id != raft_get_nodeid(me));
             raft_remove_node(me, node);
             break;
 
         case RAFT_LOGTYPE_REMOVE_NODE:
+            // INSTRUMENT_BB
             if (node) {
                 raft_node_set_active(node, 1);
             }
@@ -355,15 +369,18 @@ void raft_handle_apply_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_ind
 
     switch (ety->type) {
         case RAFT_LOGTYPE_ADD_NODE:
+            // INSTRUMENT_BB
             raft_node_set_addition_committed(node, 1);
             raft_node_set_voting_committed(node, 1);
             raft_node_set_has_sufficient_logs(node, 1);
             break;
         case RAFT_LOGTYPE_ADD_NONVOTING_NODE:
+            // INSTRUMENT_BB
             raft_node_set_addition_committed(node, 1);
             break;
         case RAFT_LOGTYPE_REMOVE_NODE:
             if (node) {
+                // INSTRUMENT_BB
                 raft_remove_node(me, node);
             }
             break;
@@ -372,6 +389,7 @@ void raft_handle_apply_cfg_change(raft_server_t* me, raft_entry_t* ety, raft_ind
     }
 }
 
+// INSTRUMENT_FUNC
 int raft_delete_entry_from_idx(raft_server_t *me, raft_index_t idx)
 {
     assert(me->commit_idx < idx);
@@ -440,6 +458,7 @@ void raft_accept_leader(raft_server_t* me, raft_node_id_t leader)
     raft_reset_transfer_leader(me, 0);
 }
 
+// INSTRUMENT_FUNC
 int raft_become_leader(raft_server_t *me)
 {
     raft_entry_t *noop = raft_entry_new(0);
@@ -495,6 +514,7 @@ int raft_become_leader(raft_server_t *me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_become_precandidate(raft_server_t *me)
 {
     for (int i = 0; i < me->num_nodes; i++) {
@@ -520,6 +540,7 @@ int raft_become_precandidate(raft_server_t *me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_become_candidate(raft_server_t *me)
 {
     int e = raft_set_current_term(me, me->current_term + 1);
@@ -558,6 +579,7 @@ int raft_become_candidate(raft_server_t *me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 void raft_become_follower(raft_server_t* me)
 {
     raft_set_state(me, RAFT_STATE_FOLLOWER);
@@ -737,12 +759,14 @@ int raft_recv_appendentries_response(raft_server_t *me,
 
     if (resp->msg_id < raft_node_get_match_msgid(node) ||
         resp->term < me->current_term) {
+        // INSTRUMENT_BB
         return 0;
     }
 
     /* If response contains term T > currentTerm: set currentTerm = T
        and convert to follower (§5.3) */
     if (resp->term > me->current_term) {
+        // INSTRUMENT_BB
         int e = raft_set_current_term(me, resp->term);
         if (e != 0) {
             return e;
@@ -1327,6 +1351,7 @@ raft_entry_t **raft_get_entries_from_idx(raft_server_t *me,
     return e;
 }
 
+// INSTRUMENT_FUNC
 int raft_send_snapshot(raft_server_t *me, raft_node_t *node)
 {
     if (!me->cb.send_snapshot) {
@@ -1374,6 +1399,7 @@ int raft_send_snapshot(raft_server_t *me, raft_node_t *node)
     }
 }
 
+// INSTRUMENT_FUNC
 int raft_recv_snapshot(raft_server_t *me,
                        raft_node_t *node,
                        raft_snapshot_req_t *req,
@@ -1769,12 +1795,14 @@ int raft_begin_snapshot(raft_server_t *me)
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_cancel_snapshot(raft_server_t *me)
 {
     me->snapshot_in_progress = 0;
     return 0;
 }
 
+// INSTRUMENT_FUNC
 int raft_end_snapshot(raft_server_t *me)
 {
     if (!me->snapshot_in_progress)
